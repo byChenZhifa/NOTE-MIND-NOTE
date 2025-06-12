@@ -1,33 +1,44 @@
 import numpy as np
 import theano.tensor as T
 from common.geometry import get_point_mean_distances
-from planners.basic.tree import Tree, Node
-from planners.ilqr.solver import iLQR
-from planners.ilqr.dynamics import AutoDiffDynamics
-from planners.ilqr.cost import TreeCost
-from planners.ilqr.utils import gen_dist_field
+from planners.basic.tree import Tree, Node  # 基础树结构
+from planners.ilqr.solver import iLQR  # iLQR求解器
+from planners.ilqr.dynamics import AutoDiffDynamics  # 自动微分动力学模型
+from planners.ilqr.cost import TreeCost  # 树结构代价函数
+from planners.ilqr.utils import gen_dist_field  # 生成距离场工具
 from planners.ilqr.potential import ControlPotential, StatePotential, StateConstraint, PotentialField
 
 
 class TrajectoryTreeOptimizer:
     def __init__(self, config=None):
-        self.config = config
+        """轨迹树优化器初始化"""
+        self.config = config  # 配置参数对象
+        # 创建动力学模型(自行车模型)，时间间隔为dt，轮距为2.5
         self.ilqr = iLQR(self._get_dynamic_model(self.config.dt, 2.5))
-        self.cost_tree = None
-        self.debug = None
+        self.cost_tree = None  # 用于存储代价函数的树结构
+        self.debug = None  # 调试信息占位符
 
-    def init_warm_start_cost_tree(self, scen_tree: Tree, init_state, init_ctrl, target_lane, target_vel):
+    def init_warm_start_cost_tree(self, scen_tree: Tree, init_state, init_ctrl, 
+                                target_lane, target_vel):
+        """初始化预热阶段的代价函数树（简化版）"""
+        # 获取初始状态（包含位置、速度、朝向、加速度和转向角）
         x0 = self._get_init_state(init_state, init_ctrl)
+        # 从配置获取网格分辨率和平滑网格尺寸
         res = self.config.w_opt_cfg["smooth_grid_res"]
         grid_size = self.config.w_opt_cfg["smooth_grid_size"]
+        # 生成目标车道的距离场（欧氏距离）
         offsets, xx, yy, dist_field = gen_dist_field(x0, target_lane, grid_size, res)
-        quad_dist_field = dist_field**2
+        quad_dist_field = dist_field**2  # 平方距离（便于二次代价计算）
 
+        # 创建代价树
         cost_tree = Tree()
-        cost_tree.add_node(Node(-1, None, x0))
+        cost_tree.add_node(Node(-1, None, x0))  # 添加根节点（初始状态）
         # DFS to convert scenario tree to trajectory tree maintain the last traj node index of each scenario node
+        # 用于记录每个场景节点对应的最后一个轨迹节点索引
         last_traj_node_index = {}
-        queue = [scen_tree.get_root()]
+        queue = [scen_tree.get_root()]  # 初始化队列（场景树的根节点）
+        
+        # 场景树广度优先遍历（BFS）
         while queue:
             cur_node = queue.pop()
             # [prob] [ego + exo, N, state_dim] [ego + exo, N, state_dim, state_dim]
