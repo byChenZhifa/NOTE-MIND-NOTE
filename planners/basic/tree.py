@@ -53,6 +53,13 @@ class Tree:
             raise KeyError("root node does not exist.")
 
     def add_node(self, node):
+        """添加节点到树结构
+        输入：
+            node: 要添加的节点对象
+        处理逻辑：
+            - 维护父子节点关系
+            - 更新叶子节点列表
+        """
         if node.parent_key is None and self.nodes == {}:
             self.nodes[node.key] = node
             self.root = node.key
@@ -62,9 +69,15 @@ class Tree:
                 raise KeyError("Parent does not exist.")
             if node.key in self.nodes:
                 raise ValueError("Node key already exists.")
+
+            # 更新父节点的子节点列表
             self.nodes[node.parent_key].children_keys.append(node.key)
+
+            # 维护叶子节点列表
             if node.parent_key in self.leaves:
                 self.leaves.remove(node.parent_key)
+
+            #  添加新节点
             self.nodes[node.key] = node
             self.nodes[node.key].depth = self.nodes[node.parent_key].depth + 1
             self.leaves.append(node.key)

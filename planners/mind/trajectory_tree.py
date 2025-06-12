@@ -18,10 +18,10 @@ class TrajectoryTreeOptimizer:
 
     def init_warm_start_cost_tree(self, scen_tree: Tree, init_state, init_ctrl, target_lane, target_vel):
         x0 = self._get_init_state(init_state, init_ctrl)
-        res = self.config.w_opt_cfg['smooth_grid_res']
-        grid_size = self.config.w_opt_cfg['smooth_grid_size']
+        res = self.config.w_opt_cfg["smooth_grid_res"]
+        grid_size = self.config.w_opt_cfg["smooth_grid_size"]
         offsets, xx, yy, dist_field = gen_dist_field(x0, target_lane, grid_size, res)
-        quad_dist_field = dist_field ** 2
+        quad_dist_field = dist_field**2
 
         cost_tree = Tree()
         cost_tree.add_node(Node(-1, None, x0))
@@ -38,14 +38,15 @@ class TrajectoryTreeOptimizer:
                 if i % 2 == 1:
                     continue
                 cur_index = len(cost_tree.nodes) - 1
-                quad_cost_field = self.config.w_opt_cfg['w_tgt'] * prob * quad_dist_field
+                quad_cost_field = self.config.w_opt_cfg["w_tgt"] * prob * quad_dist_field
                 pot_field = PotentialField(offsets, res, xx, yy, quad_cost_field)
-                state_pot = StatePotential(self.config.w_opt_cfg['w_des_state'] * prob,
-                                           np.array([0, 0, target_vel, 0.0, 0.0, 0.0]))
-                state_con = StateConstraint(self.config.w_opt_cfg['w_state_con'] * prob,
-                                            self.config.w_opt_cfg['state_lower_bound'],
-                                            self.config.w_opt_cfg['state_upper_bound'])
-                ctrl_pot = ControlPotential(self.config.w_opt_cfg['w_ctrl'] * prob)
+                state_pot = StatePotential(self.config.w_opt_cfg["w_des_state"] * prob, np.array([0, 0, target_vel, 0.0, 0.0, 0.0]))
+                state_con = StateConstraint(
+                    self.config.w_opt_cfg["w_state_con"] * prob,
+                    self.config.w_opt_cfg["state_lower_bound"],
+                    self.config.w_opt_cfg["state_upper_bound"],
+                )
+                ctrl_pot = ControlPotential(self.config.w_opt_cfg["w_ctrl"] * prob)
 
                 cost_tree.add_node(Node(cur_index, last_index, [[pot_field, state_pot, state_con], [ctrl_pot]]))
                 last_index = cur_index
@@ -57,11 +58,11 @@ class TrajectoryTreeOptimizer:
 
     def init_cost_tree(self, scen_tree: Tree, init_state, init_ctrl, target_lane, target_vel):
         x0 = self._get_init_state(init_state, init_ctrl)
-        res = self.config.opt_cfg['smooth_grid_res']
-        grid_size = self.config.opt_cfg['smooth_grid_size']
+        res = self.config.opt_cfg["smooth_grid_res"]
+        grid_size = self.config.opt_cfg["smooth_grid_size"]
         offsets, xx, yy, dist_field = gen_dist_field(x0, target_lane, grid_size, res)
         centroids = np.vstack([xx.ravel(), yy.ravel()]).T
-        quad_dist_field = dist_field ** 2
+        quad_dist_field = dist_field**2
 
         cost_tree = Tree()
         cost_tree.add_node(Node(-1, None, x0))
@@ -82,7 +83,7 @@ class TrajectoryTreeOptimizer:
                 cov_dist_field = dist_field * 0.0
 
                 ego_mean = trajs[0, i]
-                ego_cov = covs[0, i] + self.config.opt_cfg['w_ego_cov_offset']
+                ego_cov = covs[0, i] + self.config.opt_cfg["w_ego_cov_offset"]
                 ego_dist_field = (get_point_mean_distances(centroids, ego_mean) - ego_cov).reshape(cov_dist_field.shape)
                 ego_dist_field = np.maximum(ego_dist_field, 0.0)
 
@@ -94,26 +95,26 @@ class TrajectoryTreeOptimizer:
 
                 for exo_idx in range(1, trajs.shape[0]):
                     exo_mean = trajs[exo_idx, i]
-                    exo_cov = covs[exo_idx, i] + self.config.opt_cfg['w_exo_cov_offset']
-                    exo_dis_field = (exo_cov - get_point_mean_distances(centroids, exo_mean)).reshape(
-                        cov_dist_field.shape)
+                    exo_cov = covs[exo_idx, i] + self.config.opt_cfg["w_exo_cov_offset"]
+                    exo_dis_field = (exo_cov - get_point_mean_distances(centroids, exo_mean)).reshape(cov_dist_field.shape)
                     exo_dis_field = np.maximum(exo_dis_field, 0.0)
-                    exo_dis_field[exo_dis_field > 0] += self.config.opt_cfg['w_exo_cost_offset']
+                    exo_dis_field[exo_dis_field > 0] += self.config.opt_cfg["w_exo_cost_offset"]
                     cov_dist_field += exo_dis_field
 
-                quad_cost_field = (self.config.opt_cfg['w_tgt'] * prob * quad_dist_field +
-                                   self.config.opt_cfg['w_exo'] * cov_dist_field +
-                                   self.config.opt_cfg['w_ego'] * ego_dist_field)
+                quad_cost_field = (
+                    self.config.opt_cfg["w_tgt"] * prob * quad_dist_field
+                    + self.config.opt_cfg["w_exo"] * cov_dist_field
+                    + self.config.opt_cfg["w_ego"] * ego_dist_field
+                )
 
                 pot_field = PotentialField(offsets, res, xx, yy, quad_cost_field)
 
-                state_pot = StatePotential(self.config.opt_cfg['w_des_state'] * prob,
-                                           np.array([0, 0, target_vel, 0.0, 0.0, 0.0]))
+                state_pot = StatePotential(self.config.opt_cfg["w_des_state"] * prob, np.array([0, 0, target_vel, 0.0, 0.0, 0.0]))
 
-                state_con = StateConstraint(self.config.opt_cfg['w_state_con'] * prob,
-                                            self.config.opt_cfg['state_lower_bound'],
-                                            self.config.opt_cfg['state_upper_bound'])
-                ctrl_pot = ControlPotential(self.config.opt_cfg['w_ctrl'] * prob)
+                state_con = StateConstraint(
+                    self.config.opt_cfg["w_state_con"] * prob, self.config.opt_cfg["state_lower_bound"], self.config.opt_cfg["state_upper_bound"]
+                )
+                ctrl_pot = ControlPotential(self.config.opt_cfg["w_ctrl"] * prob)
 
                 cost_tree.add_node(Node(cur_index, last_index, [[pot_field, state_pot, state_con], [ctrl_pot]]))
                 last_index = cur_index
@@ -131,12 +132,20 @@ class TrajectoryTreeOptimizer:
         return xs, us
 
     def solve(self, us_init=None):
+        """求解最优轨迹树
+        输入：
+            us_init: 初始控制序列
+        返回：
+            优化后的轨迹树
+        """
+
         if us_init is None:
             us_init = np.zeros((self.cost_tree.tree.size() - 1, self.config.action_size))
 
-
+        # 使用iLQR算法进行优化
         xs, us = self.ilqr.fit(us_init, self.cost_tree)
 
+        # 构建轨迹树数据结构
         # return traj tree
         traj_tree = Tree()
         for node in self.cost_tree.tree.nodes.values():
@@ -147,8 +156,7 @@ class TrajectoryTreeOptimizer:
         return traj_tree
 
     def _get_init_state(self, init_state, init_ctrl):
-        return np.array(
-            [init_state[0], init_state[1], init_state[2], init_state[3], init_ctrl[0], init_ctrl[1]])
+        return np.array([init_state[0], init_state[1], init_state[2], init_state[3], init_ctrl[0], init_ctrl[1]])
 
     def _get_dynamic_model(self, dt, wb):
         x_inputs = [
@@ -165,13 +173,15 @@ class TrajectoryTreeOptimizer:
             T.dscalar("dtheta"),
         ]
 
-        f = T.stack([
-            x_inputs[0] + x_inputs[2] * T.cos(x_inputs[3]) * dt,
-            x_inputs[1] + x_inputs[2] * T.sin(x_inputs[3]) * dt,
-            x_inputs[2] + x_inputs[4] * dt,
-            x_inputs[3] + x_inputs[2] / wb * T.tan(x_inputs[5]) * dt,
-            x_inputs[4] + u_inputs[0] * dt,
-            x_inputs[5] + u_inputs[1] * dt,
-        ])
+        f = T.stack(
+            [
+                x_inputs[0] + x_inputs[2] * T.cos(x_inputs[3]) * dt,
+                x_inputs[1] + x_inputs[2] * T.sin(x_inputs[3]) * dt,
+                x_inputs[2] + x_inputs[4] * dt,
+                x_inputs[3] + x_inputs[2] / wb * T.tan(x_inputs[5]) * dt,
+                x_inputs[4] + u_inputs[0] * dt,
+                x_inputs[5] + u_inputs[1] * dt,
+            ]
+        )
 
         return AutoDiffDynamics(f, x_inputs, u_inputs)

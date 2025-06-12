@@ -18,23 +18,33 @@ class ArgoAgentLoader:
         for traj_pos, traj_ang, traj_vel, traj_type, traj_tid, traj_cat, has_flag in zip(*trajs_info):
             traj_info = [traj_pos, traj_ang, traj_vel, has_flag]
             if traj_tid in cl_agts:
-                agent_file, agent_name = cl_agts[traj_tid]["agent"].split(':')
+                agent_file, agent_name = cl_agts[traj_tid]["agent"].split(":")
                 planner_cfg = cl_agts[traj_tid]["planner_config"]
                 # get planner type
                 agent = getattr(import_module(agent_file), agent_name)()
 
                 if isinstance(agent, MINDAgent):
-                    agt_clr = AgentColor().ego_disable()
+                    # MIND AV Agent
+                    agt_clr = AgentColor().ego_disable()  # 赋值颜色
+                    MIND_AV_Agent = 1111
 
-                agent.init(traj_tid, traj_type, traj_cat, traj_info, smp, agt_clr,
-                           semantic_lane_id=cl_agts[traj_tid]["semantic_lane"],
-                           target_velocity=cl_agts[traj_tid]["target_velocity"])
+                agent.init(
+                    traj_tid,
+                    traj_type,
+                    traj_cat,
+                    traj_info,
+                    smp,
+                    agt_clr,
+                    semantic_lane_id=cl_agts[traj_tid]["semantic_lane"],
+                    target_velocity=cl_agts[traj_tid]["target_velocity"],
+                )
 
                 agent.set_enable_timestep(cl_agts[traj_tid]["enable_timestep"])
                 agent.init_planner(planner_cfg)
 
                 if isinstance(agent, MINDAgent):
                     agent.update_target_lane(smp, cl_agts[traj_tid]["semantic_lane"])
+                    MIND_AV_Agent = 1111
 
             else:
                 agent = NonReactiveAgent()
@@ -42,7 +52,6 @@ class ArgoAgentLoader:
                 agent.init(traj_tid, traj_type, traj_cat, traj_info, smp, agt_clr)
             agents.append(agent)
         return agents
-
 
     def get_closed_loop_agents(self, cl_agt_cfg):
         closed_loop_agents = dict()
@@ -74,7 +83,7 @@ class ArgoAgentLoader:
         for idx, x in enumerate(scenario.tracks):
             if x.track_id == scenario.focal_track_id and x.category == TrackCategory.FOCAL_TRACK:
                 focal_idx = idx
-            elif x.track_id == 'AV':
+            elif x.track_id == "AV":
                 av_idx = idx
             elif x.category == TrackCategory.SCORED_TRACK:
                 scored_idcs.append(idx)
@@ -83,13 +92,12 @@ class ArgoAgentLoader:
             elif x.category == TrackCategory.TRACK_FRAGMENT:
                 fragment_idcs.append(idx)
 
-        assert av_idx is not None, '[ERROR] Wrong av_idx'
-        assert focal_idx is not None, '[ERROR] Wrong focal_idx'
-        assert av_idx not in unscored_idcs, '[ERROR] Duplicated av_idx'
+        assert av_idx is not None, "[ERROR] Wrong av_idx"
+        assert focal_idx is not None, "[ERROR] Wrong focal_idx"
+        assert av_idx not in unscored_idcs, "[ERROR] Duplicated av_idx"
 
         sorted_idcs = [focal_idx, av_idx] + scored_idcs + unscored_idcs + fragment_idcs
-        sorted_cat = ["focal", "av"] + ["score"] * \
-                     len(scored_idcs) + ["unscore"] * len(unscored_idcs) + ["frag"] * len(fragment_idcs)
+        sorted_cat = ["focal", "av"] + ["score"] * len(scored_idcs) + ["unscore"] * len(unscored_idcs) + ["frag"] * len(fragment_idcs)
         sorted_tid = [scenario.tracks[idx].track_id for idx in sorted_idcs]
 
         # * must follows the pre-defined order
@@ -158,8 +166,7 @@ class ArgoAgentLoader:
             trajs_tid.append(sorted_tid[k])
             trajs_cat.append(sorted_cat[k])
 
-        res_traj_infos = self.resample_trajs_info(
-            [trajs_pos, trajs_ang, trajs_vel, trajs_type, trajs_tid, trajs_cat, has_flags])
+        res_traj_infos = self.resample_trajs_info([trajs_pos, trajs_ang, trajs_vel, trajs_type, trajs_tid, trajs_cat, has_flags])
 
         trajs_pos, trajs_ang, trajs_vel, trajs_type, trajs_tid, trajs_cat, has_flags = res_traj_infos
 
@@ -210,6 +217,5 @@ class ArgoAgentLoader:
             res_trajs_tid.append(trajs_tid[a_idx])
             res_trajs_cat.append(trajs_cat[a_idx])
 
-        res_traj_info = [res_trajs_pos, res_trajs_ang, res_trajs_vel, res_trajs_type, res_trajs_tid, res_trajs_cat,
-                         res_has_flags]
+        res_traj_info = [res_trajs_pos, res_trajs_ang, res_trajs_vel, res_trajs_type, res_trajs_tid, res_trajs_cat, res_has_flags]
         return res_traj_info

@@ -1,6 +1,6 @@
 {
-    "use_cuda": true,
-    "network_config": "planners.mind.configs.networks.net_cfg",
-    "ckpt_path": "planners/mind/check_points/20240121-172745.tar",
-    "planning_config": "planners.mind.configs.planning.demo_1"
+  "use_cuda": true,
+  "network_config": "planners.mind.configs.networks.net_cfg",
+  "ckpt_path": "/home/zcy/czf/paper_code/NOTE-MIND-NOTE-多分支规划-移植代码/NOTE-MIND-NOTE/planners/mind/check_points/20240121-172745.tar",
+  "planning_config": "planners.mind.configs.planning.demo_1"
 }

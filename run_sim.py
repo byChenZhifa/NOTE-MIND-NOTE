@@ -1,5 +1,15 @@
 import argparse
 from typing import Any, Dict, List, Tuple, Union
+import os
+import sys
+
+
+dir_current_file = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))  # NOTE-MIND-NOTE/
+sys.path.append(dir_current_file)
+dir_MIND_file = os.path.abspath(os.path.dirname(dir_current_file))
+sys.path.append(dir_MIND_file)
+
+
 from simulator import Simulator
 
 
@@ -10,7 +20,13 @@ def parse_arguments() -> Any:
         parsed arguments
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", required=True, default="", type=str)
+    # python run_sim.py --config configs/demo_{1,2,3,4}.json
+    parser.add_argument(
+        "--config", required=False, default="/home/zcy/czf/paper_code/NOTE-MIND-NOTE-多分支规划-移植代码/NOTE-MIND-NOTE/configs/demo_1.json", type=str
+    )
+    # parser.add_argument("--config", required=False, default="configs/demo_2.json", type=str)
+    # parser.add_argument("--config", required=False, default="configs/demo_3.json", type=str)
+    # parser.add_argument("--config", required=False, default="configs/demo_4.json", type=str)
 
     # parser.add_argument("--mode", default="val", type=str, help="Mode, train/val/test")
     # parser.add_argument("--features_dir", required=True, default="", type=str, help="Path to the dataset")

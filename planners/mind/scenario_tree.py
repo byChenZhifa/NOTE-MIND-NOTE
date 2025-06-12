@@ -36,20 +36,37 @@ class ScenarioTreeGenerator:
         self.tree = Tree()
 
     def branch_aime(self, lcl_smp, agent_obs):
-        # Initialization
+        """AIME算法主流程
+        输入：
+            lcl_smp: 局部语义地图
+            agent_obs: 所有交通参与者的观测数据
+        返回：
+            生成的场景树集合
+        """
+        
+        # 1. 数据预处理 Initialization
         data = self.process_data(lcl_smp, agent_obs)
+        #  2. 初始化场景树
         self.init_scenario_tree(data)
+        
+        # 3. 迭代式分支生成
         # AIME iteration
         branch_nodes = self.get_branch_set()
         while branch_nodes:
-            # Batch Scenario Prediction
+            # 1. 神经网络预测多智能体未来轨迹 ====================
+            # Batch Scenario Prediction  批量预测场景发展
             data_batch = collate_fn([node.data.obs_data for node in branch_nodes])
             pred_batch = self.predict_scenes(data_batch)
-            # Pruning & Merging
+            
+            # 2. 场景剪枝与合并 Pruning & Merging  剪枝与合并  ====================
             pred_bar = self.prune_merge(data_batch, pred_batch)
+            
+            # 创建新节点
             # Create New Nodes (slightly different from the pseudocode in paper)
             self.create_nodes(pred_bar)
-            # Branching Decision on newly added node
+            
+            # 3. 创建场景树节点  ====================
+            # Branching Decision on newly added node  创建新节点
             self.decide_branch()
             # Update Branch Set
             branch_nodes = self.get_branch_set()
